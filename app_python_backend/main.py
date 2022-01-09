@@ -15,8 +15,10 @@ import os
 from os.path import isfile, join,abspath
 from os import listdir
 
-from werkzeug.datastructures import FileStorage
+
 import werkzeug
+
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 api = Api(app)
@@ -91,48 +93,43 @@ def ValidateData(row):
 
 
 # Check if there source files to DB
-def writeRecordsToDB(session, table):
+def writeRecordsToDB(session, table, file):
+    print('file')
 
-
-    files  = [f for f in listdir(CONF.CSV_INPUT) if isfile(join(CONF.CSV_INPUT, f))]
-    for i in files:
-        print(i)
-
-
-        with open(os.path.abspath(f"{CONF.CSV_INPUT}/{i}"), mode='r') as csv_file:
-            csv_reader = pandas.read_csv(csv_file)
-            
-            commit_counter = 0
-
-            for row in csv_reader.to_dict(orient="records"):
-                # create object to match DB object
-                DBRow = ValidateData(row=row)
+    if file:
+        with open(os.path.abspath(f"{CONF.CSV_INPUT}/{file}"), mode='r') as csv_file:
+                csv_reader = pandas.read_csv(csv_file)
                 
-                # skip unvalid rows
-                if not DBRow:
-                    continue
-                
+                commit_counter = 0
 
-                # Form sqlalchemy object
-                DBObject = table(
-                    **DBRow
-                )
-                
-                session.add(DBObject)
-                
-                # add try expect
-                if commit_counter == 300:
-                    logger.debug("Database commit")
-                    session.commit()
-                    commit_counter = 0
-                
-                commit_counter += 1
-            
-            # Final database commit
-            session.commit()
+                for row in csv_reader.to_dict(orient="records"):
+                    # create object to match DB object
+                    DBRow = ValidateData(row=row)
+                    
+                    # skip unvalid rows
+                    if not DBRow:
+                        continue
+                    
 
+                    # Form sqlalchemy object
+                    DBObject = table(
+                        **DBRow
+                    )
+                    
+                    session.add(DBObject)
+                    
+                    # add try expect
+                    if commit_counter == 300:
+                        logger.debug("Database commit")
+                        session.commit()
+                        commit_counter = 0
+                    
+                    commit_counter += 1
+                
+                # Final database commit
+                session.commit()
 
-
+  
 
     
 class Locations(Resource):
@@ -161,55 +158,44 @@ class Locations(Resource):
         for i in last_modification:
             print(i.row_id,i.location)
 
-
-
         return jsonify(last_modification), 201
 
 
-class ImportFiles(Resource):
-    def get(self):
 
+
+
+class UploadCSV(Resource):
+   def post(self):
+    parse = reqparse.RequestParser()
+    parse.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files')
+    args = parse.parse_args()
+    csv_file = args['file']
+
+    filename = secure_filename(csv_file.filename)
+
+    csv_file.save(filename)
+
+    # upload file if have one
+    if filename:
         db_conn = DATABASE_CONNECTION()
 
         # Check database connection status and return 500 connection failed
         if not db_conn.status_ok:
             logger.error("Database connection failed. Exit")
 
-
         Base.metadata.create_all(db_conn.engine)
-
         db_conn.init_session()
-        
-        writeRecordsToDB(session=db_conn.db_session, table=sensorMetrics)
-        
-   
-        return {'data': 'asd'}, 200  # return data and 200 OK code
 
-
-
-
-
-from flask_restful import Resource, Api, reqparse
-import werkzeug
-
-class UploadImage(Resource):
-   def post(self):
-     parse = reqparse.RequestParser()
-     parse.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files')
-     args = parse.parse_args()
-     image_file = args['file']
-     print(args)
-     print(image_file)
-     image_file.save("your_file_name.csv")
-     return
+        writeRecordsToDB(session=db_conn.db_session, table=sensorMetrics, file=filename)
+    
+    return 201
 
         
 
-api.add_resource(UploadImage, '/upload')
+api.add_resource(UploadCSV, '/upload')
 
 # create endpoints
 api.add_resource(Locations, '/locations')
-api.add_resource(ImportFiles, '/import')
 
 
 
