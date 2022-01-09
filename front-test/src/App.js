@@ -65,14 +65,20 @@ class App extends Component {
             <h3>
               File Upload using React!
             </h3>
-            <div>
-                <input type="file" name="file"onChange={this.onFileChange} />
-                <button onClick={this.onFileUpload}>
+            
+
+
+          <form method="POST" enctype="multipart/form-data"></form>
+          
+        <input type="file" id="file" name="FileN" accept="results/csv" onChange={this.onFileChange}></input>
+        <button onClick={this.onFileUpload}>
                   Upload!
                 </button>
-            </div>
-          {this.fileData()}
+                {this.fileData()}
         </div>
+
+        
+
       );
     }
   }
