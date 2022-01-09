@@ -1,4 +1,4 @@
-from flask import Flask,request,redirect
+from flask import Flask,jsonify
 from flask_restful import Api, Resource,reqparse
 import dateutil.parser
 
@@ -8,7 +8,6 @@ from db                         import DATABASE_CONNECTION
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm             import exc
 from sqlalchemy                 import Column, String, DateTime, Float,Integer,func
-
 import pandas
 
 import os
@@ -121,7 +120,7 @@ def writeRecordsToDB(session, table):
                 
                 session.add(DBObject)
                 
-                
+                # add try expect
                 if commit_counter == 300:
                     logger.debug("Database commit")
                     session.commit()
@@ -157,12 +156,14 @@ class Locations(Resource):
             logger.error("Database connection failed.")
 
 
-        last_modification = db_conn.db_session.query(_table)
+        last_modification = db_conn.db_session.query(_table).all()
 
         for i in last_modification:
             print(i.row_id,i.location)
 
-        return
+
+
+        return jsonify(last_modification), 201
 
 
 class ImportFiles(Resource):
@@ -184,38 +185,27 @@ class ImportFiles(Resource):
    
         return {'data': 'asd'}, 200  # return data and 200 OK code
 
-class FileStorageArgument(reqparse.Argument):
-    """This argument class for flask-restful will be used in
-    all cases where file uploads need to be handled."""
-    
-    def convert(self, value, op):
-        if self.type is FileStorage:  # only in the case of files
-            # this is done as self.type(value) makes the name attribute of the
-            # FileStorage object same as argument name and value is a FileStorage
-            # object itself anyways
-            return value
-
-        # called so that this argument class will also be useful in
-        # cases when argument type is not a file.
-        super(FileStorageArgument, self).convert(*args, **kwargs)
 
 
-# for some reason the resfull wont work with posting files.. have to test again
-class ForBetaAndUpload(Resource):
 
+
+from flask_restful import Resource, Api, reqparse
+import werkzeug
+
+class UploadImage(Resource):
    def post(self):
-    parse = reqparse.RequestParser()
-    print(parse)
-    print(parse.__dict__)
-    test = parse.add_argument('file', type = werkzeug.datastructures.FileStorage, location = 'file')
-    print(test)
-    args = parse.parse_args()
-    print(args)
-    image_file = args['file']
-    image_file.save("your_file_name.jpg")
+     parse = reqparse.RequestParser()
+     parse.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files')
+     args = parse.parse_args()
+     image_file = args['file']
+     print(args)
+     print(image_file)
+     image_file.save("your_file_name.csv")
+     return
+
         
 
-api.add_resource(ForBetaAndUpload, '/upload')
+api.add_resource(UploadImage, '/upload')
 
 # create endpoints
 api.add_resource(Locations, '/locations')
