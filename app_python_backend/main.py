@@ -11,17 +11,17 @@ from sqlalchemy                 import Column, String, DateTime, Float,Integer,f
 import pandas
 
 import os
-
-from os.path import isfile, join,abspath
-from os import listdir
-
-
 import werkzeug
-
-from werkzeug.utils import secure_filename
+from werkzeug.utils             import secure_filename
 
 app = Flask(__name__)
 api = Api(app)
+
+# allowed files to upload
+app.config["ALLOWED_EXTENSIONS"] = ["csv"]
+
+# allowd file size (16megabytes) .. move this to front
+#app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000
 
 
 Base = declarative_base()
@@ -41,6 +41,22 @@ class sensorMetrics(Base):
 db_conn = DATABASE_CONNECTION()
 db_conn.dispose_engine()
 del db_conn
+
+
+def ValidateFileType(file):
+    
+    # We only want files with a . in the filename
+    if not "." in file:
+        return False
+
+    # Split the extension from the filename
+    extension = file.rsplit(".", 1)[1]
+
+    # Check if the extension is in MAX_CONTENT_LENGTH
+    if extension.lower() in app.config["ALLOWED_EXTENSIONS"]:
+        return True
+    else:
+        return False
 
 
 def ValidateData(row):
@@ -94,13 +110,13 @@ def ValidateData(row):
 
 # Check if there source files to DB
 def writeRecordsToDB(session, table, file):
-    print('file')
 
     if file:
         with open(os.path.abspath(f"{CONF.CSV_INPUT}/{file}"), mode='r') as csv_file:
                 csv_reader = pandas.read_csv(csv_file)
                 
                 commit_counter = 0
+                rowsAdded = 0
 
                 for row in csv_reader.to_dict(orient="records"):
                     # create object to match DB object
@@ -117,6 +133,7 @@ def writeRecordsToDB(session, table, file):
                     )
                     
                     session.add(DBObject)
+                    rowsAdded += 1
                     
                     # add try expect
                     if commit_counter == 300:
@@ -128,6 +145,8 @@ def writeRecordsToDB(session, table, file):
                 
                 # Final database commit
                 session.commit()
+                session.close()
+                return rowsAdded
 
   
 
@@ -170,34 +189,63 @@ class UploadCSV(Resource):
     parse.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files')
     args = parse.parse_args()
     csv_file = args['file']
-
+    
+    # newer trust input
     filename = secure_filename(csv_file.filename)
-
+    
+    # store to disk, check if doable in memory 
     csv_file.save(filename)
 
+    response = {'rowsToDB': None , 'message':None}
+    
     # upload file if have one
-    if filename:
+    if filename and ValidateFileType(file=filename):
         db_conn = DATABASE_CONNECTION()
 
-        # Check database connection status and return 500 connection failed
+        # Check database connection status
         if not db_conn.status_ok:
             logger.error("Database connection failed. Exit")
 
         Base.metadata.create_all(db_conn.engine)
         db_conn.init_session()
+        
+        # write valid rows to DB
+        writeResults = writeRecordsToDB(session=db_conn.db_session, table=sensorMetrics, file=filename)
+        
+        response['rowsToDB'] = writeResults
+        response['message'] = 'Ok'
+        response = jsonify(response)
+        
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        #print(response.headers)
+        if db_conn.db_session:
+            db_conn.db_session.close()
 
-        writeRecordsToDB(session=db_conn.db_session, table=sensorMetrics, file=filename)
+        logger.debug(response.data)
+        
+        # remove file from disk
+        if os.path.exists(filename):
+            os.remove(filename)
+            logger.debug(F"file {filename} removed")
+        
+        return response
     
-    return 201
+    else:
+        response = jsonify({'message': 'File not valid csv' })
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        logger.debug(response.data)
+        return response
+    
+    
 
         
 
-api.add_resource(UploadCSV, '/upload')
+
 
 # create endpoints
 api.add_resource(Locations, '/locations')
 
-
+api.add_resource(UploadCSV, '/upload')
 
 
 
