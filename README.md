@@ -17,6 +17,11 @@ Tried React and managed to get CSV upload to working
 ### Backend version
 Created with python
 
+## How to deploy
+- Build containers with build.sh
+- Deploy needed kubernetes services 
+- Use portforward (or fix ingress :D)
+
 
 ## Stuff to do
 - Add secrets
