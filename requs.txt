@@ -1,9 +1,0 @@
-sqlalchemy
-pymysql
-prometheus_client
-apscheduler
-
-Flask
-flask_restful
-
-pandas
