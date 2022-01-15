@@ -1,0 +1,7 @@
+sqlalchemy
+pymysql
+prometheus_client
+Flask
+flask_restful
+python-dateutil
+#pandas

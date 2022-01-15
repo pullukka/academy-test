@@ -1,13 +1,16 @@
 import axios from 'axios';
  
 import React,{Component} from 'react';
+/* import { render } from 'react-dom';
+import GetData from './components/GetData'; */
  
 class App extends Component {
   
     state = {
  
       // Initially, no file is selected
-      selectedFile: null
+      selectedFile: null,
+      Result:null
     };
     
     // On file select (from the pop up)
@@ -18,8 +21,26 @@ class App extends Component {
     
     };
     
-    // On file upload (click the upload button)
-    onFileUpload = () => {
+    // On file upload (click the upload button) wait for response
+    onFileUpload = async () => {
+    
+      async function test(dataFromForm) 
+        {
+          let UploadResult = axios.post("http://localhost:63121/upload", dataFromForm)
+
+          console.log(await UploadResult)
+          console.log(await (await UploadResult).data)
+
+          
+            
+          return (
+            <div>
+              <h2>File Details:</h2>
+              <p>File Name: {await UploadResult }</p>
+            </div>
+          );
+        }
+       
     
       // Create an object of formData
       const formData = new FormData();
@@ -30,26 +51,28 @@ class App extends Component {
         this.state.selectedFile,
         this.state.selectedFile.name
       );
-    
-      // Details of the uploaded file
-      console.log(this.state.selectedFile);
-    
+
+      
+      // https://zetcode.com/javascript/axios/
       // Request made to the backend api
-      // Send formData object
-      axios.post("http://localhost:5000/upload", formData);
+      // Send formData object and catch response
+      
+      await test(formData)
+      
+
     };
+
     
-    // File content to be displayed after
-    // file upload is complete
+   
+    // echo file details
     fileData = () => {
     
       if (this.state.selectedFile) {
-         
-        
+
         return (
           <div>
-            <br />
-            <h4>Choose before Pressing the Upload button</h4>
+            <h2>File Details:</h2>
+            <p>File Name: {this.state.selectedFile.name}</p>
           </div>
         );
       }
@@ -60,27 +83,28 @@ class App extends Component {
       return (
         <div>
             <h1>
-              GeeksforGeeks
+              Upload csv records
             </h1>
-            <h3>
-              File Upload using React!
-            </h3>
-            
 
-
-          <form method="POST" enctype="multipart/form-data"></form>
+          <form method="POST" encType="multipart/form-data" onSubmit={this.handleSubmit}></form>
           
-        <input type="file" id="file" name="FileN" accept="results/csv" onChange={this.onFileChange}></input>
-        <button onClick={this.onFileUpload}>
+        <input type="file" id="file" name="FileN" accept="results/csv" onChange={ this.onFileChange}></input>
+        <button type="submit" onClick={ this.onFileUpload}>
                   Upload!
                 </button>
                 {this.fileData()}
-        </div>
+                
 
+        </div>
+      );
         
 
-      );
     }
+
+
+    
   }
+
+ 
  
   export default App;
