@@ -14,8 +14,12 @@ Created with python
 
 
 ## Stuff to do
-Add secrets
-Monitoring 
+- Add secrets
+- monitoring
+- fix ingress for frontend
+- change frontend to use service address
+- user management
+- reports 
 
 Backend:
 Provide more endpoints for frontend.
