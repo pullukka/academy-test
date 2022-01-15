@@ -21,7 +21,8 @@ Created with python
 - Build containers with build.sh
 - Deploy needed kubernetes services 
 - Use portforward (or fix ingress :D)
-
+- Create database and user from dump
+- Place DB SSL certs if needed
 
 ## Stuff to do
 - Add secrets
