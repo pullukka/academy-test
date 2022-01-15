@@ -1,0 +1,28 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: front
+  name: app-front-deployment
+  labels:
+    app: app-front
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-front
+  template:
+    metadata:
+      labels:
+        app: app-front
+    spec:
+      containers:
+      - name: app-front
+        image: localhost:32000/app-front:0.2
+        imagePullPolicy: Always
+        ports:
+          - name: service
+            containerPort: 3000
+            protocol: TCP
+        #- containerPort: 3000
+
