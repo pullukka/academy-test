@@ -1,0 +1,40 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: backend
+  name: app-backend-deployment
+  labels:
+    app: app-backend
+spec:
+  selector:
+    matchLabels:
+      app: app-backend
+  template:
+    metadata:
+      labels:
+        app: app-backend
+    spec:
+      containers:
+      - name: app-backend
+        image: localhost:32000/app-backend:0.7
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+        env:
+          - name: DATABASE_HOST
+            value: "192.168.1.214"
+          - name: DATABASE_USERNAME
+            value: "admin"            # <-- add these sensitive values to secrets or keyvault or so..
+          - name: DATABASE_PASSWORD
+            value: "XXXXXXX"  # <-- add these sensitive values to secrets or keyvault or so..
+          - name: DATABASE_PORT
+            value: "3306"
+          - name: DATABASE_SCHEMA
+            value: "farm_stats"
+          - name: APP_NAME
+            value: "backend"
+          - name: LOGGING_LEVEL
+            value: "INFO"
+          - name: METRICS_TABLE
+            value: "metrics"
