@@ -22,7 +22,7 @@ Created with python
 - Deploy needed kubernetes services 
 - Use portforward (or fix ingress :D)
 - Create database and user from dump
-- Place DB SSL certs if needed
+- Place DB SSL certs if needed and fix line ssl_conf = {'ssl_ca': os.path.dirname(os.path.abspath(__file__))+F"/{CONF.DATABASE_CA}"----- } from db.py
 
 ## Stuff to do
 - Add secrets
@@ -30,7 +30,8 @@ Created with python
 - fix ingress for frontend
 - change frontend to use service address
 - user management
-- reports 
+- reports
+- Tests
 
 Backend:
 Provide more endpoints for frontend.
